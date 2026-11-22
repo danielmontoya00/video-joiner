@@ -3,12 +3,13 @@ const $=id=>document.getElementById(id), note=s=>$("message").textContent=s;
 const clock=s=>Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
 const config=await (await fetch("proyecto.json")).json();
 const invite=new URLSearchParams(location.hash.slice(1)), slides=$("slides");
-let role,stream,recorder,mode="idle",scene=-1,phrase=-1,seconds=0,raf,started=0,runId=0;
+let role,stream,recorder,mode="idle",scene=-1,phrase=-1,seconds=0,raf,started=0,runId=0,lastWord="";
 let activeBlob,blobURL,packageURL,packageBlob,monitor,levelTimer,wake,latest,previewSize=0,restoreId=0,validInvite=false;
 const errors=e=>({NotAllowedError:"Autoriza la cámara y el micrófono en los permisos de este sitio.",NotFoundError:"No se encontraron cámara y micrófono. Puedes importar un video.",NotReadableError:"Otro programa está usando la cámara o el micrófono."}[e.name]||e.message||"No se pudo completar la operación.");
 for(const r of config.roles) $("role").add(new Option(r.name,r.id));
 const initial=config.roles.find(r=>r.id===invite.get("p"));
 if(initial) $("role").value=initial.id;
+slides.addEventListener("loadedmetadata",()=>{if(role&&mode==="idle")slides.currentTime=role.start+seconds;});
 function setMode(next){
   mode=next;const busy=mode!=="idle";document.body.classList.toggle("running",busy);
   $("role").disabled=busy||validInvite;$("record").hidden=$("rehearse").hidden=busy;$("stop").hidden=!busy;
@@ -20,7 +21,7 @@ function draw(t,force=false){
   const i=Math.max(0,role.scenes.findLastIndex?role.scenes.findLastIndex(s=>s.start<=seconds):role.scenes.reduce((a,s,j)=>s.start<=seconds?j:a,0));
   const s=role.scenes[i];
   if(i!==scene||force){
-    scene=i;phrase=-1;$("cue").textContent="DIAPOSITIVA "+s.number+"  /  "+clock(s.start)+"–"+clock(s.start+s.duration);
+    scene=i;phrase=-1;lastWord="";$("cue").textContent="DIAPOSITIVA "+s.number+"  /  "+clock(s.start)+"–"+clock(s.start+s.duration);
     $("sceneTitle").textContent=s.title;$("pageNo").textContent=s.number+" DE 8";
     $("prompt").replaceChildren(...(s.text.match(/[^.!?]+[.!?]*\s*/g)||[s.text]).map(str=>{const el=document.createElement("span");el.textContent=str;return el;}));
     [...$("scenes").children].forEach((b,j)=>b.setAttribute("aria-current",String(j===i)));
@@ -31,8 +32,15 @@ function draw(t,force=false){
   while(j<spans.length-1 && pos>=spans[j].textContent.length){pos-=spans[j].textContent.length;j++;}
   if(j!==phrase){
     spans[phrase]?.classList.remove("active");spans[j].classList.add("active");phrase=j;
-    if(mode!=="idle"){const box=$("prompt"), y=spans[j].getBoundingClientRect().top-box.getBoundingClientRect().top;
-      if(y<0||y>box.clientHeight*.6)box.scrollTop+=y-12;}
+  }
+  if(mode==="record"||mode==="rehearse"){
+    const node=spans[j].firstChild, text=node.textContent;
+    let offset=Math.max(0,Math.min(text.length-1,Math.floor(pos)));
+    while(offset>0 && !/\s/.test(text[offset-1])) offset--;
+    const marker=i+"-"+j+"-"+offset;
+    if(lastWord!==marker){lastWord=marker;const range=document.createRange();range.setStart(node,offset);range.setEnd(node,Math.min(text.length,offset+1));
+      const box=$("prompt"), y=range.getBoundingClientRect().top-box.getBoundingClientRect().top;
+      if(y<0||y>box.clientHeight*.65)box.scrollTop+=y-box.clientHeight*.24;}
   }
 }
 function seek(t){slides.currentTime=role.start+t;draw(t,true);}

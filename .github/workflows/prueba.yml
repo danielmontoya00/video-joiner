@@ -1,0 +1,33 @@
+name: Prueba de montaje con cámaras simuladas
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  navegadores:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Preparar motores de navegador
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pw" playwright@1.56.1
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium firefox webkit
+      - name: Verificar el estudio en tres motores
+        run: |
+          python3 -m http.server 8100 --bind 127.0.0.1 --directory site >/dev/null 2>&1 &
+          NODE_PATH="$RUNNER_TEMP/pw/node_modules" node ci/prueba_navegadores.cjs
+  montaje:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Preparar herramientas multimedia
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core python3-pil python3-cryptography
+      - name: Comprobar montaje, formatos y aislamiento
+        run: /usr/bin/python3 ci/prueba_montaje.py
