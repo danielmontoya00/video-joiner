@@ -1,0 +1,93 @@
+{
+  "title": "Llegadas sin fricción",
+  "repo": "danielmontoya00/video-joiner",
+  "duration": 221,
+  "roles": [
+    {
+      "id": "daniel",
+      "name": "Daniel Montoya",
+      "theme": "La llegada del huésped",
+      "start": 0,
+      "duration": 72,
+      "scenes": [
+        {
+          "number": 1,
+          "start": 0,
+          "duration": 22,
+          "title": "Llegadas sin fricción",
+          "text": "Para un huésped que ya revisó su reserva en el teléfono, llegar al mostrador y empezar de nuevo es una mala bienvenida. Somos el Equipo 10. Para el caso académico de Marriott Singapore diseñamos un registro que recepción puede retomar justo donde lo dejó el huésped."
+        },
+        {
+          "number": 2,
+          "start": 22,
+          "duration": 28,
+          "title": "El cambio de canal",
+          "text": "Pensemos en Luis. Ya revisó su reserva y prefiere terminar en el mostrador. Sofía, que lo atiende en recepción, necesita saber hasta dónde llegó y por qué pidió ayuda. El prototipo reúne esos datos en una tarjeta. Así, Luis puede elegir cómo terminar su registro y Sofía puede ayudarlo sin pedirle que cuente todo desde el principio."
+        },
+        {
+          "number": 3,
+          "start": 50,
+          "duration": 22,
+          "title": "Una llegada sin biometría",
+          "text": "En esta reserva de prueba, el huésped consulta la opción de verificación facial y elige continuar sin usar su rostro. La aplicación abre el registro manual y conserva los pasos anteriores. Desde esa misma pantalla puede completar su llegada o pedir ayuda a recepción."
+        }
+      ],
+      "keyHash": "25e735804d826146772f25203ddc587eda4a21fb15b9ffd4d629b5bf354379f2"
+    },
+    {
+      "id": "josue",
+      "name": "Josué Águila Ramos",
+      "theme": "Las decisiones del asistente",
+      "start": 72,
+      "duration": 64,
+      "scenes": [
+        {
+          "number": 4,
+          "start": 0,
+          "duration": 34,
+          "title": "Cuándo responde el asistente",
+          "text": "El asistente cubre diez temas frecuentes del registro. Primero identifica si la pregunta entra en su catálogo. Después busca la respuesta que corresponde. En la prueba del modelo, derivó a recepción el 99,6 % de las consultas fuera del catálogo. Para las preguntas parecidas, probamos mostrar dos opciones. Incluso con esa confirmación, el error fue del 7,3 %. Nuestra meta es el 5 %, por eso el huésped siempre puede pedir ayuda."
+        },
+        {
+          "number": 5,
+          "start": 34,
+          "duration": 30,
+          "title": "Una consulta llega a recepción",
+          "text": "La demo muestra dos ejemplos predefinidos. Una pregunta en inglés sobre la verificación facial abre dos opciones. El huésped elige privacidad y ve qué ocurre con su imagen. Después pide un taxi. Como esa solicitud queda fuera del catálogo, la aplicación la envía a recepción. En la tarjeta aparece el motivo junto con el avance del registro."
+        }
+      ],
+      "keyHash": "4193e4bf39045c17d215a7345e8de443f1d8b27bb0f839f12ccae95dfdfa664f"
+    },
+    {
+      "id": "edmundo",
+      "name": "Edmundo Carmona",
+      "theme": "Resultados y propuesta de piloto",
+      "start": 136,
+      "duration": 85,
+      "scenes": [
+        {
+          "number": 6,
+          "start": 0,
+          "duration": 26,
+          "title": "Dos fallas cambiaron el diseño",
+          "text": "Las primeras pruebas revelaron dos fallas. Cuando alguien pedía ayuda, recepción perdía el motivo de la solicitud. Y cuando rechazaba la verificación facial, quedaba sin una salida clara. Hicimos que la tarjeta conservara el motivo y que el rechazo abriera el registro manual. Repetimos los doce escenarios y pasamos de diez aprobados a doce."
+        },
+        {
+          "number": 7,
+          "start": 26,
+          "duration": 34,
+          "title": "Qué muestran ocho perfiles simulados",
+          "text": "Con ocho perfiles simulados comparamos el registro de referencia con el guiado. La mediana del ahorro fue de 59 segundos y los ocho perfiles encontraron la ruta manual sin ayuda. Falta comprobarlo con huéspedes. También vimos dónde mejorar el asistente. De las sesenta y seis consultas que respondió en ese ensayo, falló en cuatro. Es poco más del 6 %, todavía por encima de la meta."
+        },
+        {
+          "number": 8,
+          "start": 60,
+          "duration": 25,
+          "title": "La decisión que pedimos a operación",
+          "text": "Pedimos al equipo de operación que autorice una prueba con recepción y entre seis y ocho participantes. Usaremos reservas ficticias para comparar los dos recorridos. Mediremos qué datos repiten los participantes, si encuentran la ruta manual sin ayuda y dónde falla el asistente. Con esa evidencia podremos decidir si avanzamos a un piloto."
+        }
+      ],
+      "keyHash": "038dbe6ed4e62175084cfbabc81603a2ef3e9ab6e4535b7fe563b52be09bbbdb"
+    }
+  ]
+}

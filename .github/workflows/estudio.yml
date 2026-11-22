@@ -1,0 +1,69 @@
+name: Estudio · recepción y montaje
+on:
+  push:
+    branches: [main]
+  issues:
+    types: [opened, edited, reopened]
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: estudio-produccion
+  cancel-in-progress: false
+jobs:
+  preparar:
+    if: github.event_name != 'issues' || startsWith(github.event.issue.title, 'Toma / ')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+      issues: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Preparar FFmpeg y librerías de medios
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core python3-pil python3-cryptography
+      - name: Abrir estado cifrado
+        run: |
+          if git show-ref --verify --quiet refs/remotes/origin/studio-state; then
+            git worktree add --detach "$RUNNER_TEMP/vault" refs/remotes/origin/studio-state
+          else
+            mkdir -p "$RUNNER_TEMP/vault"
+            git -C "$RUNNER_TEMP/vault" init -q -b studio-state
+          fi
+      - name: Validar tomas y preparar la publicación
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STUDIO_KEYS: ${{ secrets.STUDIO_KEYS }}
+        run: /usr/bin/python3 ci/studio.py "$RUNNER_TEMP/vault" "$RUNNER_TEMP/public"
+      - name: Conservar únicamente el estado cifrado
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          vault="$RUNNER_TEMP/vault"
+          git -C "$vault" add --all
+          if ! git -C "$vault" diff --cached --quiet; then
+            git -C "$vault" -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -qm "Actualizar tomas verificadas"
+            gh auth setup-git
+            git -C "$vault" push "https://github.com/$GITHUB_REPOSITORY.git" HEAD:refs/heads/studio-state
+          fi
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/public
+          retention-days: 1
+  publicar:
+    needs: preparar
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - name: Publicar estudio
+        id: pages
+        uses: actions/deploy-pages@v4
