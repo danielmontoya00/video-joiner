@@ -29,7 +29,7 @@
           "start": 50,
           "duration": 22,
           "title": "Una llegada sin biometría",
-          "text": "En esta reserva de prueba, el huésped consulta la opción de verificación facial y elige continuar sin usar su rostro. La aplicación abre el registro manual y conserva los pasos anteriores. Desde esa misma pantalla puede completar su llegada o pedir ayuda a recepción."
+          "text": "En la primera demo, el huésped abre su reserva, consulta la opción de verificación facial y elige continuar sin usar su rostro. La aplicación abre el registro manual y conserva los pasos anteriores. Desde esa misma pantalla puede completar su llegada o pedir ayuda a recepción."
         }
       ],
       "keyHash": "25e735804d826146772f25203ddc587eda4a21fb15b9ffd4d629b5bf354379f2"
@@ -53,7 +53,7 @@
           "start": 34,
           "duration": 30,
           "title": "Una consulta llega a recepción",
-          "text": "La demo muestra dos ejemplos predefinidos. Una pregunta en inglés sobre la verificación facial abre dos opciones. El huésped elige privacidad y ve qué ocurre con su imagen. Después pide un taxi. Como esa solicitud queda fuera del catálogo, la aplicación la envía a recepción. En la tarjeta aparece el motivo junto con el avance del registro."
+          "text": "En la segunda demo vemos dos consultas predefinidas. Una pregunta en inglés sobre la verificación facial abre dos opciones. El huésped elige privacidad y ve qué ocurre con su imagen. Después pide un taxi. Como esa solicitud queda fuera del catálogo, la aplicación la envía a recepción. En la tarjeta aparece el motivo junto con el avance del registro."
         }
       ],
       "keyHash": "4193e4bf39045c17d215a7345e8de443f1d8b27bb0f839f12ccae95dfdfa664f"

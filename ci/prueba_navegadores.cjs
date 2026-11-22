@@ -12,7 +12,8 @@ const assert = require('node:assert/strict');
       await page.selectOption('#role','josue');
       await page.getByRole('button',{name:'Diap. 5'}).click();
       assert.match(await page.locator('#sceneTitle').innerText(), /recepción/);
-      await page.waitForFunction(()=>{const v=document.getElementById('slides');return v.readyState>=2 && v.currentTime>=105;},null,{timeout:30000});
+      try{await page.waitForFunction(()=>{const v=document.getElementById('slides');return v.readyState>=2 && v.currentTime>=105;},null,{timeout:30000});}
+      catch(e){console.error(name,await page.locator('#slides').evaluate(v=>({src:v.currentSrc,tiempo:v.currentTime,estado:v.readyState,error:v.error?.message,seekable:v.seekable.length})));throw e;}
       await page.click('#rehearse');
       await page.waitForFunction(()=>document.getElementById('message').textContent==='Ensayo en curso.',null,{timeout:20000});
       await page.waitForFunction(()=>document.getElementById('time').textContent==='0:01');

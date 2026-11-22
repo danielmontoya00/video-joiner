@@ -8,6 +8,7 @@ import zipfile
 from io import BytesIO
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import studio
+from demos import evidence
 
 
 def run():
@@ -38,6 +39,8 @@ def run():
         data=(public/"resultado.bin").read_bytes()
         raw=AESGCM(studio.KEYS["final"]).decrypt(data[:12],data[12:],b"studio-v1/final")
         master=t/"validate.mp4";master.write_bytes(raw)
+        if os.environ.get("EVIDENCIA_DIR"):
+            evidence(master,t,Path(os.environ["EVIDENCIA_DIR"]))
         result=json.loads(subprocess.check_output(["ffprobe","-v","error","-show_format","-show_streams","-of","json",master]))
         v,a=result["streams"];assert (v["width"],v["height"],v["codec_name"],v["pix_fmt"])==(1920,1080,"h264","yuv420p")
         assert a["codec_name"]=="aac" and a["channels"]==2 and abs(float(result["format"]["duration"])-221)<0.15

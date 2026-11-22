@@ -71,13 +71,13 @@ async function saveTake(blob){
 }
 function disableCam(){
   if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;clearInterval(levelTimer);monitor?.close().catch(()=>{});monitor=null;
-  $("camera").srcObject=null;$("meter").value=0;$("enable").textContent="Activar";$("camicon").hidden=false;$("deviceState").textContent="Tu cámara está apagada.";
+  document.body.classList.remove("camera-on");$("camera").srcObject=null;$("meter").value=0;$("enable").textContent="Activar";$("camicon").hidden=false;$("deviceState").textContent="Tu cámara está apagada.";
 }
 async function enableCam(){
   if(stream&&stream.getTracks().every(t=>t.readyState==="live"))return;
   if(!navigator.mediaDevices?.getUserMedia)throw Error("Este navegador no ofrece captura. Abre la app en Safari, Chrome o Edge, o importa tu video.");
   const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:960},height:{ideal:720},frameRate:{ideal:24,max:30}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
-  stream=media;$("camera").srcObject=media;$("camera").play().catch(()=>{});$("camicon").hidden=true;$("enable").textContent="Apagar";$("deviceState").textContent="Centrado en el cuadro · micrófono activo.";
+  stream=media;document.body.classList.add("camera-on");$("camera").srcObject=media;$("camera").play().catch(()=>{});$("camicon").hidden=true;$("enable").textContent="Apagar";$("deviceState").textContent="Céntrate en el cuadro y comprueba el nivel de voz.";
   try{monitor=new (window.AudioContext||window.webkitAudioContext)();await monitor.resume();const a=monitor.createAnalyser();a.fftSize=256;monitor.createMediaStreamSource(media).connect(a);
     const buf=new Uint8Array(a.fftSize);levelTimer=setInterval(()=>{a.getByteTimeDomainData(buf);$("meter").value=Math.min(1,Math.sqrt(buf.reduce((n,k)=>n+((k-128)/128)**2,0)/buf.length)*4);},160);}catch{}
 }
@@ -89,11 +89,22 @@ function makeRecorder(){
   catch{return new MediaRecorder(stream);}
 }
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function verifyVideo(blob){
+  const el=document.createElement("video"),url=URL.createObjectURL(blob);el.preload="metadata";
+  try{await Promise.race([new Promise((ok,no)=>{el.onloadedmetadata=ok;el.onerror=()=>no(Error("No se pudo leer el video."));el.src=url;}),wait(9000).then(()=>{throw Error("La vista previa del video no respondió.");})]);
+    if(!el.videoWidth||!el.videoHeight)throw Error("Esta toma contiene sólo audio. Activa la cámara o importa un video con imagen y sonido.");
+  }finally{el.removeAttribute("src");el.load();URL.revokeObjectURL(url);}
+}
 async function start(record){
   if(mode!=="idle")return;const id=++runId;let r, data=[],complete=false;
   setMode("prepare");$("playback").pause();
   try{
-    if(record){await enableCam();if(id!==runId)return;r=makeRecorder();}
+    if(record){await enableCam();if(id!==runId)return;
+      const cam=$("camera"), limit=performance.now()+7500;
+      while(id===runId && !(cam.videoWidth>0 && cam.readyState>=2 && stream.getVideoTracks().some(t=>t.readyState==="live"&&!t.muted)) && performance.now()<limit)await wait(100);
+      if(id!==runId)return;
+      if(!cam.videoWidth || cam.readyState<2 || !stream.getVideoTracks().some(t=>t.readyState==="live"&&!t.muted) || !stream.getAudioTracks().some(t=>t.readyState==="live"&&!t.muted))throw Error("No llegó imagen o sonido. Revisa los permisos y la cámara, o importa un video.");
+      r=makeRecorder();}
     seek(0);slides.muted=true;await slides.play();slides.pause();slides.currentTime=role.start;
     if(id!==runId)return;
     for(let i=3;i>0;i--){note((record?"Grabación":"Ensayo")+" en "+i+"…");await wait(820);if(id!==runId)return;}
@@ -102,7 +113,7 @@ async function start(record){
     if(r){
       recorder=r;r.ondataavailable=e=>{if(e.data.size)data.push(e.data);};
       r.onstop=async()=>{const blob=new Blob(data,{type:r.mimeType||data[0]?.type});recorder=null;
-        if(complete&&blob.size){await saveTake(blob);note("Toma completa. Ya puedes revisarla.");}
+        if(complete&&blob.size){try{await verifyVideo(blob);await saveTake(blob);note("Toma completa. Ya puedes revisarla.");}catch(e){note(errors(e));}}
         else note("Grabación interrumpida. Vuelve a empezar cuando estés listo.");setMode("idle");};
       r.onerror=()=>finish(false);
       for(const track of stream.getTracks())track.addEventListener("ended",()=>{if(recorder===r)finish(false);},{once:true});
@@ -131,6 +142,7 @@ $("file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)r
   const player=document.createElement("video"),url=URL.createObjectURL(f);player.preload="metadata";player.src=url;
   try{await Promise.race([new Promise((ok,no)=>{player.onloadedmetadata=ok;player.onerror=()=>no(Error("Este navegador no pudo leer el archivo."));}),wait(8000).then(()=>{throw Error("No se pudo leer la duración del video.");})]);
     if(Number.isFinite(player.duration)&&Math.abs(player.duration-role.duration)>3)throw Error("La toma debe durar "+clock(role.duration)+" (margen de 3 s).");
+    if(!player.videoWidth)throw Error("El archivo necesita una pista de video además del audio.");
     await saveTake(f);note("Video importado. Reproduce la toma antes de enviarla.");}catch(err){note(errors(err));}finally{URL.revokeObjectURL(url);}
 };
 $("send").onclick=async()=>{if(!validInvite){note("Abre tu enlace individual en este navegador para enviar el borrador.");return;}

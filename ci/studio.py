@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from render import PROJECT, ROOT, check_take, render
+from demos import verify as verify_demos
 
 LIMIT=23*1024*1024
 REPO="danielmontoya00/video-joiner"
@@ -113,6 +114,7 @@ def process(state,public,work):
             for r in ROLES:
                 p=work/(r+".take");p.write_bytes(packet((state/(r+".zip")).read_bytes(),r));takes[r]=p
             mp4=work/"master.mp4";render(takes,work,mp4)
+            verify_demos(mp4,work)
             nonce=os.urandom(12)
             (state/"resultado.bin").write_bytes(nonce+AESGCM(KEYS["final"]).encrypt(nonce,mp4.read_bytes(),b"studio-v1/final"))
             record["final"]=version
