@@ -98,18 +98,27 @@ async function verifyVideo(blob){
 async function start(record){
   if(mode!=="idle")return;const id=++runId;let r, data=[],complete=false;
   setMode("prepare");$("playback").pause();
+  if(matchMedia("(max-width:800px)").matches)window.scrollTo(0,0);
   try{
+    seek(0);slides.muted=true;
+    const firstPlay=slides.play().then(()=>true,()=>false);
     if(record){await enableCam();if(id!==runId)return;
       const cam=$("camera"), limit=performance.now()+7500;
       while(id===runId && !(cam.videoWidth>0 && cam.readyState>=2 && stream.getVideoTracks().some(t=>t.readyState==="live"&&!t.muted)) && performance.now()<limit)await wait(100);
       if(id!==runId)return;
       if(!cam.videoWidth || cam.readyState<2 || !stream.getVideoTracks().some(t=>t.readyState==="live"&&!t.muted) || !stream.getAudioTracks().some(t=>t.readyState==="live"&&!t.muted))throw Error("No llegó imagen o sonido. Revisa los permisos y la cámara, o importa un video.");
       r=makeRecorder();}
-    seek(0);slides.muted=true;await slides.play();slides.pause();slides.currentTime=role.start;
     if(id!==runId)return;
     for(let i=3;i>0;i--){note((record?"Grabación":"Ensayo")+" en "+i+"…");await wait(820);if(id!==runId)return;}
+    const metadataLimit=performance.now()+8000;
+    while(id===runId&&slides.readyState<1&&performance.now()<metadataLimit)await wait(80);
+    if(id!==runId)return;
+    if(!slides.videoWidth)throw Error("La presentación todavía no está disponible. Comprueba tu conexión y vuelve a intentarlo.");
+    slides.currentTime=role.start;
     if(slides.seeking)await Promise.race([new Promise(ok=>slides.addEventListener("seeked",ok,{once:true})),wait(1500)]);
-    await slides.play();if(id!==runId){slides.pause();return;}
+    const nativePlayback=await Promise.race([firstPlay,wait(400).then(()=>false)]);
+    if(id!==runId){slides.pause();return;}
+    let lastVisualSync=-1;
     if(r){
       recorder=r;r.ondataavailable=e=>{if(e.data.size)data.push(e.data);};
       r.onstop=async()=>{const blob=new Blob(data,{type:r.mimeType||data[0]?.type});recorder=null;
@@ -123,7 +132,10 @@ async function start(record){
     function tick(){
       if(id!==runId)return;const t=(performance.now()-started)/1000;draw(t);
       if(t>=role.duration){complete=true;finish(true);return;}
-      if(!slides.seeking && Math.abs(slides.currentTime-role.start-t)>.65) slides.currentTime=role.start+t;
+      const syncInterval=(!nativePlayback||slides.paused)?.10:.65;
+      if(!slides.seeking && t-lastVisualSync>=syncInterval && Math.abs(slides.currentTime-role.start-t)>syncInterval){
+        slides.currentTime=role.start+t;lastVisualSync=t;
+      }
       raf=requestAnimationFrame(tick);
     }tick();
   }catch(e){if(id===runId){finish(false);note(errors(e));}}

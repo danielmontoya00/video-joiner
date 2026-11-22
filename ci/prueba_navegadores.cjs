@@ -15,13 +15,14 @@ const assert = require('node:assert/strict');
       try{await page.waitForFunction(()=>{const v=document.getElementById('slides');return v.readyState>=2 && v.currentTime>=105;},null,{timeout:30000});}
       catch(e){console.error(name,await page.locator('#slides').evaluate(v=>({src:v.currentSrc,tiempo:v.currentTime,estado:v.readyState,error:v.error?.message,seekable:v.seekable.length})));throw e;}
       await page.click('#rehearse');
-      await page.waitForFunction(()=>document.getElementById('message').textContent==='Ensayo en curso.',null,{timeout:20000});
+      try{await page.waitForFunction(()=>document.getElementById('message').textContent==='Ensayo en curso.',null,{timeout:25000,polling:200});}
+      catch(e){console.error(name,await page.locator('#message').innerText(),await page.locator('#slides').evaluate(v=>({visibility:document.visibilityState,src:v.currentSrc,tiempo:v.currentTime,estado:v.readyState,pausado:v.paused,dim:[v.videoWidth,v.videoHeight],error:v.error?.message})));throw e;}
       await page.waitForFunction(()=>document.getElementById('time').textContent==='0:01');
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
       await page.click('#stop');
       assert(await page.locator('#record').isVisible());
       assert.deepEqual(errors,[]);
-      console.log(name+' · reproducción H.264, guía sincronizada, ensayo y ancho correcto.');
+      console.log(name+' · reproducción de las diapositivas, guía sincronizada, ensayo y ancho correcto.');
     }finally{await browser.close();}
   }
 })().catch(e=>{console.error(e);process.exitCode=1;});
