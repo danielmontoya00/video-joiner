@@ -18,10 +18,10 @@ def run():
         candidates={r:[] for r in studio.ROLES}
         studio.candidates=lambda:candidates
         packets={}
-        for i,(role,codec,container,size,color) in enumerate(zip(studio.PROJECT["roles"],["libx264","libvpx","libx264"],
-                 ["mp4","webm","mov"],["320x180","180x320","240x240"],["green","navy","maroon"])):
+        for i,(role,codec,container,size) in enumerate(zip(studio.PROJECT["roles"],["libx264","libvpx","libx264"],
+                 ["mp4","webm","mov"],["320x180","180x320","240x240"])):
             path=t/("sample."+container)
-            subprocess.run(["ffmpeg","-hide_banner","-loglevel","error","-y","-f","lavfi","-i",f"color={color}:s={size}:r=12",
+            subprocess.run(["ffmpeg","-hide_banner","-loglevel","error","-y","-f","lavfi","-i",f"testsrc2=s={size}:r=12",
                 "-f","lavfi","-i",f"sine=frequency={330+110*i}:sample_rate=44100","-t",str(role["duration"]),
                 "-c:v",codec,"-c:a","libopus" if container=="webm" else "aac",str(path)],check=True)
             studio.check_take(path,role["duration"])

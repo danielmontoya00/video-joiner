@@ -25,7 +25,7 @@ jobs:
       - name: Preparar FFmpeg y librerías de medios
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core python3-pil python3-cryptography
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core python3-pil python3-cryptography python3-numpy
       - name: Abrir estado cifrado
         run: |
           if git show-ref --verify --quiet refs/remotes/origin/studio-state; then

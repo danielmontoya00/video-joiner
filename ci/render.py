@@ -63,6 +63,16 @@ def frame(path, role, index):
 
 
 def render(takes, work, output):
+    # The PPTX track switches between full-range and limited-range video at the
+    # demos. Isolate those changes from the camera clock and the audio filters.
+    slides = work / "presentacion-uniforme.mkv"
+    subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        "-i", str(ROOT / "site/assets/presentacion.mp4"), "-map", "0:v:0", "-an",
+        "-vf", "scale=1280:720:in_range=auto:out_range=tv:out_color_matrix=bt709,format=yuv420p,"
+               "setsar=1,setparams=range=limited:color_primaries=bt709:color_trc=bt709:colorspace=bt709",
+        "-c:v", "ffv1", "-level", "3", "-g", "24", "-threads", "3", "-r", "24",
+        "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
+        str(slides)], check=True, timeout=300)
     segments=[]
     for ix,role in enumerate(PROJECT["roles"]):
         duration=role["duration"];base=work/f"frame-{ix}.png";frame(base,role,ix)
@@ -75,7 +85,7 @@ def render(takes, work, output):
                f"aresample=48000,apad,atrim=duration={duration},afade=t=in:d=0.035,"
                f"afade=t=out:st={duration-.065}:d=0.065[a]")
         subprocess.run([FFMPEG,"-hide_banner","-loglevel","error","-nostdin","-y","-loop","1","-framerate","24","-i",str(base),
-          "-ss",str(role["start"]),"-i",str(ROOT/"site/assets/presentacion.mp4"),*SAFE,"-i",str(takes[role["id"]]),
+          "-ss",str(role["start"]),"-i",str(slides),*SAFE,"-i",str(takes[role["id"]]),
           "-filter_complex_threads","2","-filter_complex",graph,"-map","[v]","-map","[a]","-t",str(duration),
           "-c:v","libx264","-preset","veryfast","-threads","3","-crf","20","-maxrate","2200k","-bufsize","4400k",
           "-profile:v","high","-level","4.0","-g","48","-pix_fmt","yuv420p","-c:a","aac","-ar","48000","-ac","2","-b:a","160k",

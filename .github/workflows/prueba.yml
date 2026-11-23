@@ -29,7 +29,7 @@ jobs:
       - name: Preparar herramientas multimedia
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core python3-pil python3-cryptography
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core python3-pil python3-cryptography python3-numpy
       - name: Comprobar montaje, formatos y aislamiento
         env:
           EVIDENCIA_DIR: ${{ runner.temp }}/evidencia
