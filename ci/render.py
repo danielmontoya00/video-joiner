@@ -74,24 +74,36 @@ def render(takes, work, output):
     if len(formats)!=1 or len(frames)!=24*PROJECT["duration"]:
         raise ValueError("La pista de diapositivas debe mantener formato, rango de color y 24 fps durante todo el pitch.")
     segments=[]
+    voices=[]
     for ix,role in enumerate(PROJECT["roles"]):
         duration=role["duration"];base=work/f"frame-{ix}.png";frame(base,role,ix)
         target=work/f"part-{ix}.mp4"
         graph=("[0:v]fps=24,setsar=1[canvas];[1:v]scale=1456:819,setsar=1,format=yuv444p[slide];"
                "[2:v]setpts=PTS-STARTPTS,fps=24,scale=300:372:force_original_aspect_ratio=increase,"
                "crop=300:372,setsar=1,tpad=stop_mode=clone:stop_duration=3.2[cam];"
-               "[canvas][slide]overlay=48:115[base];[base][cam]overlay=1555:212,format=yuv420p[v];"
-               f"[2:a]asetpts=PTS-STARTPTS,aresample=48000,highpass=f=65,loudnorm=I=-16:TP=-1.5:LRA=11,"
-               f"aresample=48000,apad,atrim=duration={duration},afade=t=in:d=0.035,"
-               f"afade=t=out:st={duration-.065}:d=0.065[a]")
+               "[canvas][slide]overlay=48:115[base];[base][cam]overlay=1555:212,format=yuv420p[v]")
         subprocess.run([FFMPEG,"-hide_banner","-loglevel","error","-nostdin","-y","-loop","1","-framerate","24","-i",str(base),
           "-ss",str(role["start"]),"-i",str(slides),*SAFE,"-i",str(takes[role["id"]]),
-          "-filter_complex_threads","2","-filter_complex",graph,"-map","[v]","-map","[a]","-t",str(duration),
+          "-filter_complex_threads","2","-filter_complex",graph,"-map","[v]","-an","-t",str(duration),
           "-c:v","libx264","-preset","veryfast","-threads","3","-crf","20","-maxrate","2200k","-bufsize","4400k",
-          "-profile:v","high","-level","4.0","-g","48","-pix_fmt","yuv420p","-c:a","aac","-ar","48000","-ac","2","-b:a","160k",
+          "-profile:v","high","-level","4.0","-g","48","-pix_fmt","yuv420p",
           "-movflags","+faststart",str(target)],timeout=520,check=True)
         segments.append(target)
+        # Keep speech on its own sample clock and encode AAC only once, so
+        # individual AAC encoder delays do not accumulate at presenter cuts.
+        voice=work/f"voice-{ix}.wav"
+        af=("asetpts=N/SR/TB,highpass=f=65,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,"
+            f"apad,atrim=end_sample={duration*48000},afade=t=in:d=0.035,"
+            f"afade=t=out:st={duration-.065}:d=0.065,asetpts=N/SR/TB")
+        subprocess.run([FFMPEG,"-v","error","-nostdin","-y",*SAFE,"-i",str(takes[role["id"]]),
+            "-map","0:a:0","-vn","-af",af,"-ac","2","-ar","48000","-c:a","pcm_s24le",str(voice)],
+            check=True,timeout=120)
+        voices.append(voice)
     listing=work/"partes.txt"
     listing.write_text("".join("file '"+p.name+"'\n" for p in segments),encoding="ascii")
+    audio_listing=work/"voces.txt"
+    audio_listing.write_text("".join("file '"+p.name+"'\n" for p in voices),encoding="ascii")
     subprocess.run([FFMPEG,"-loglevel","error","-nostdin","-y","-f","concat","-safe","1","-i",str(listing),
-      "-c","copy","-movflags","+faststart",str(output)],timeout=70,check=True)
+      "-f","concat","-safe","1","-i",str(audio_listing),"-map","0:v:0","-map","1:a:0","-c:v","copy",
+      "-af","asetpts=N/SR/TB","-c:a","aac","-ar","48000","-ac","2","-b:a","160k",
+      "-movflags","+faststart",str(output)],timeout=90,check=True)

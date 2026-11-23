@@ -1,7 +1,8 @@
 """Check each camera and voice against the take, including during the two demos."""
 import subprocess
+import json
 import numpy as np
-from render import FFMPEG, PROJECT
+from render import FFMPEG, FFPROBE, PROJECT
 
 FPS = 8
 WIDTH, HEIGHT = 64, 80
@@ -58,6 +59,11 @@ def check_audio(source, rendered):
 
 
 def verify_presenters(master,takes):
+    packets=json.loads(subprocess.check_output([FFPROBE,"-v","error","-select_streams","a:0",
+        "-show_packets","-show_entries","packet=duration_time","-of","json",str(master)],timeout=60))["packets"]
+    # Exclude the final partial AAC packet. Every other packet is exactly 1024 samples.
+    if not packets or any(abs(float(p["duration_time"])*48000-1024)>.1 for p in packets[:-1]):
+        raise ValueError("Las marcas de tiempo del audio no siguen el reloj AAC de 48 kHz.")
     for role in PROJECT["roles"]:
         rid,start,duration=role["id"],role["start"],role["duration"]
         take=takes[rid]
