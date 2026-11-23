@@ -94,7 +94,7 @@ def render(takes, work, output):
         voice=work/f"voice-{ix}.wav"
         af=("asetpts=N/SR/TB,highpass=f=65,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,"
             f"apad,atrim=end_sample={duration*48000},afade=t=in:d=0.035,"
-            f"afade=t=out:st={duration-.065}:d=0.065,asetpts=N/SR/TB")
+            f"afade=t=out:st={duration-.065}:d=0.065,asettb=1/48000,asetpts=N")
         subprocess.run([FFMPEG,"-v","error","-nostdin","-y",*SAFE,"-i",str(takes[role["id"]]),
             "-map","0:a:0","-vn","-af",af,"-ac","2","-ar","48000","-c:a","pcm_s24le",str(voice)],
             check=True,timeout=120)
@@ -105,5 +105,5 @@ def render(takes, work, output):
     audio_listing.write_text("".join("file '"+p.name+"'\n" for p in voices),encoding="ascii")
     subprocess.run([FFMPEG,"-loglevel","error","-nostdin","-y","-f","concat","-safe","1","-i",str(listing),
       "-f","concat","-safe","1","-i",str(audio_listing),"-map","0:v:0","-map","1:a:0","-c:v","copy",
-      "-af","asetpts=N/SR/TB","-c:a","aac","-ar","48000","-ac","2","-b:a","160k",
+      "-af","asettb=1/48000,asetpts=N","-enc_time_base:a","1:48000","-c:a","aac","-ar","48000","-ac","2","-b:a","160k",
       "-movflags","+faststart",str(output)],timeout=90,check=True)

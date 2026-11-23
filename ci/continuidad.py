@@ -61,9 +61,10 @@ def check_audio(source, rendered):
 def verify_presenters(master,takes):
     packets=json.loads(subprocess.check_output([FFPROBE,"-v","error","-select_streams","a:0",
         "-show_packets","-show_entries","packet=duration_time","-of","json",str(master)],timeout=60))["packets"]
-    # Exclude the final partial AAC packet. Every other packet is exactly 1024 samples.
-    if not packets or any(abs(float(p["duration_time"])*48000-1024)>.1 for p in packets[:-1]):
-        raise ValueError("Las marcas de tiempo del audio no siguen el reloj AAC de 48 kHz.")
+    # Muxers may round time bases by one sample. Exclude the final partial packet.
+    lengths=[round(float(p["duration_time"])*48000) for p in packets[:-1]]
+    if not lengths or min(lengths)<1023 or max(lengths)>1025:
+        raise ValueError(f"Duración de paquetes AAC inesperada: {min(lengths,default=0)}–{max(lengths,default=0)} muestras.")
     for role in PROJECT["roles"]:
         rid,start,duration=role["id"],role["start"],role["duration"]
         take=takes[rid]
