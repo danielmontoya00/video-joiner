@@ -63,16 +63,16 @@ def frame(path, role, index):
 
 
 def render(takes, work, output):
-    # The PPTX track switches between full-range and limited-range video at the
-    # demos. Isolate those changes from the camera clock and the audio filters.
-    slides = work / "presentacion-uniforme.mkv"
-    subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-        "-i", str(ROOT / "site/assets/presentacion.mp4"), "-map", "0:v:0", "-an",
-        "-vf", "scale=1280:720:in_range=auto:out_range=tv:out_color_matrix=bt709,format=yuv420p,"
-               "setsar=1,setparams=range=limited:color_primaries=bt709:color_trc=bt709:colorspace=bt709",
-        "-c:v", "ffv1", "-level", "3", "-g", "24", "-threads", "3", "-r", "24",
-        "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
-        str(slides)], check=True, timeout=300)
+    # A pixel-format or range change mid-roll reinitializes FFmpeg's composition
+    # graph and can reset both camera and audio. The distributed slide track is
+    # normalized before encoding; verify its full timeline, not only its header.
+    slides = ROOT / "site/assets/presentacion.mp4"
+    fields = ("width","height","pix_fmt","color_range","color_space","color_primaries","color_transfer")
+    frames = json.loads(subprocess.check_output([FFPROBE,"-v","error","-select_streams","v:0",
+        "-show_frames","-show_entries","frame="+",".join(fields),"-of","json",str(slides)],timeout=120))["frames"]
+    formats = {tuple(f.get(k) for k in fields) for f in frames}
+    if len(formats)!=1 or len(frames)!=24*PROJECT["duration"]:
+        raise ValueError("La pista de diapositivas debe mantener formato, rango de color y 24 fps durante todo el pitch.")
     segments=[]
     for ix,role in enumerate(PROJECT["roles"]):
         duration=role["duration"];base=work/f"frame-{ix}.png";frame(base,role,ix)
